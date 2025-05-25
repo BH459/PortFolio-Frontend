@@ -23,7 +23,7 @@ export const Contact = () => {
     const { Name, Email, Message } = user;
 
     try {
-        const res = await fetch("http://localhost:3000/api/register", { // ✅ Updated path
+        const res = await fetch("https://port-folio-backend-two.vercel.app/api/register", { // ✅ Updated path
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

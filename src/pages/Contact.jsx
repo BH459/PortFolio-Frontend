@@ -99,7 +99,12 @@ export const Contact = () => {
             </div>
 
             {/* Custom Alert */}
-            {alert.show && ( <Alert handlebtn={closeAlert} /> )}
+            {alert.show && (
+                <Alert 
+                    handlebtn={closeAlert}
+                    alertData={alert}
+                />
+            )}
 
             <div className="flex flex-col w-full max-w-4xl px-4 justify-center items-center relative z-10">
                 {/* Header */}

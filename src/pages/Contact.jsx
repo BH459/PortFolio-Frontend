@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from 'react-router-dom';
 
 export const Contact = () => {
     const [user, setUser] = useState({
@@ -7,47 +6,72 @@ export const Contact = () => {
         Email: "",
         Message: "",
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [alert, setAlert] = useState({ show: false, type: '', message: '' });
 
-    const navigate = useNavigate();
+    const showAlert = (type, message) => {
+        setAlert({ show: true, type, message });
+        setTimeout(() => {
+            setAlert({ show: false, type: '', message: '' });
+        }, 5000);
+    };
 
     const handleFormSubmit = async (e) => {
-    e.preventDefault();
+        e.preventDefault();
+        setIsLoading(true);
 
-    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-    if (!user.Email || !emailPattern.test(user.Email)) {
-        alert("Please enter a valid email address.");
-        return;
-    }
-
-    const { Name, Email, Message } = user;
-
-    try {
-        const res = await fetch(`${import.meta.env.VITE_FETCH_URL}/register`, { // ✅ Updated path
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ Name, Email, Message })
-        });
-
-        if (!res.ok) {
-            window.alert("Request failed: " + res.status);
+        // Validation
+        if (!user.Name.trim()) {
+            showAlert('error', 'Please enter your name.');
+            setIsLoading(false);
             return;
         }
 
-        const data = await res.json();
-
-        if (data.status === 500 || !data) {
-            window.alert("Invalid Registration");
-        } else {
-            window.alert("Successful Registration Complete");
-            navigate('/');
+        if (!user.Email || !emailPattern.test(user.Email)) {
+            showAlert('error', 'Please enter a valid email address.');
+            setIsLoading(false);
+            return;
         }
-    } catch (error) {
-        console.error("Error submitting form:", error);
-        alert("Something went wrong. Please try again later.");
-    }
+
+        if (!user.Message.trim()) {
+            showAlert('error', 'Please enter your message.');
+            setIsLoading(false);
+            return;
+        }
+
+        const { Name, Email, Message } = user;
+
+        try {            
+            // Uncomment and modify for real API call:
+            const res = await fetch(`${import.meta.env.VITE_FETCH_URL}/register`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ Name, Email, Message })
+            });
+
+            if (!res.ok) {
+                throw new Error(`Request failed: ${res.status}`);
+            }
+
+            const data = await res.json();
+
+            if (data.status === 500 || !data) {
+                throw new Error('Registration failed');
+            }
+            // Success simulation
+            showAlert('success', 'Message sent successfully! Thank you for reaching out.');
+            setUser({ Name: "", Email: "", Message: "" });
+            
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            showAlert('error', 'Something went wrong. Please try again later.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -57,64 +81,210 @@ export const Contact = () => {
         }
     };
 
+    const closeAlert = () => {
+        setAlert({ show: false, type: '', message: '' });
+    };
+
     return (
         <section 
             id="Contact" 
-            className="min-h-screen flex justify-center items-center bg-gradient-to-br from-white via-blue-50/30 to-blue-100/20 text-slate-800 py-16"
+            className="min-h-screen flex justify-center items-center bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-100/30 text-slate-800 py-16 relative overflow-hidden"
         >
-            <div className="flex flex-col w-full max-w-6xl px-4 justify-center items-center">
-                <div className="flex w-full justify-center items-center mb-16">
-                    <h2 className="text-5xl md:text-6xl font-serif font-bold text-center text-slate-800">
-                        Contact <span className="bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">Me</span>
+            {/* Background decoration */}
+            <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-400/10 rounded-full blur-3xl"></div>
+                <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-purple-400/5 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
+            </div>
+
+            {/* Custom Alert */}
+            {alert.show && (
+                <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+                    <div className={`px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border transition-all duration-500 ease-out transform ${
+                        alert.show ? 'translate-y-0 opacity-100 scale-100' : '-translate-y-4 opacity-0 scale-95'
+                    } ${
+                        alert.type === 'success' 
+                            ? 'bg-emerald-50/95 border-emerald-200/50 text-emerald-800' 
+                            : 'bg-red-50/95 border-red-200/50 text-red-800'
+                    }`}>
+                        <div className="flex items-center space-x-3">
+                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                                alert.type === 'success' ? 'bg-emerald-100' : 'bg-red-100'
+                            }`}>
+                                {alert.type === 'success' ? (
+                                    <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                )}
+                            </div>
+                            <div className="flex-1">
+                                <p className="font-medium text-sm">{alert.message}</p>
+                            </div>
+                            <button 
+                                onClick={closeAlert}
+                                className="flex-shrink-0 ml-4 text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-white/50"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex flex-col w-full max-w-4xl px-4 justify-center items-center relative z-10">
+                {/* Header */}
+                <div className="text-center mb-12">
+                    <h2 className="text-5xl md:text-6xl font-bold text-center text-slate-800 mb-4">
+                        Get In <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Touch</span>
                     </h2>
+                    <p className="text-slate-600 text-lg max-w-2xl">
+                        Have a project in mind? Let's discuss how we can work together to bring your ideas to life.
+                    </p>
                 </div>
 
+                {/* Form Container */}
                 <div className="w-full flex justify-center">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transition-all duration-300 p-8 border border-blue-300/30 w-full max-w-2xl">
-                        <form action="POST" className="flex flex-col space-y-6">
-                            <div className="group">
-                                <input
-                                    name="Name"
-                                    type="text"
-                                    onChange={handleInputChange}
-                                    placeholder="Your Name"
-                                    value={user.Name}
-                                    className="w-full px-4 py-3 bg-white/70 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder:text-slate-400 hover:border-blue-300 focus:shadow-lg focus:shadow-blue-500/10"
-                                    required
-                                />
+                    <div className="bg-white/70 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 p-8 md:p-12 w-full max-w-2xl relative overflow-hidden">
+                        
+                        {/* Beautiful Loading Overlay */}
+                        {isLoading && (
+                            <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-3xl">
+                                <div className="flex flex-col items-center space-y-6">
+                                    {/* Multi-layer Spinner */}
+                                    <div className="relative">
+                                        <div className="w-20 h-20 border-4 border-blue-100 rounded-full"></div>
+                                        <div className="absolute top-0 left-0 w-20 h-20 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+                                        <div className="absolute top-2 left-2 w-16 h-16 border-4 border-transparent border-t-purple-500 rounded-full animate-spin" style={{animationDirection: 'reverse', animationDuration: '0.8s'}}></div>
+                                        <div className="absolute top-4 left-4 w-12 h-12 border-4 border-transparent border-t-indigo-500 rounded-full animate-spin" style={{animationDuration: '0.6s'}}></div>
+                                        
+                                        {/* Center pulse */}
+                                        <div className="absolute top-1/2 left-1/2 w-4 h-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transform -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
+                                    </div>
+                                    
+                                    {/* Animated Loading Text */}
+                                    <div className="text-center">
+                                        <div className="flex items-center justify-center space-x-2 mb-2">
+                                            <span className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                                                Sending your message
+                                            </span>
+                                            <div className="flex space-x-1">
+                                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                                                <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                                                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                                            </div>
+                                        </div>
+                                        <p className="text-slate-500 text-sm">Please wait while we process your request...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-6">
+                            {/* Name Field */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-slate-700">
+                                    Full Name
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        name="Name"
+                                        type="text"
+                                        onChange={handleInputChange}
+                                        placeholder="Enter your full name"
+                                        value={user.Name}
+                                        className="w-full px-4 py-4 bg-white/80 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder:text-slate-400 hover:border-slate-300 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-white"
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="group">
-                                <input
-                                    name="Email"
-                                    type="email"
-                                    onChange={handleInputChange}
-                                    placeholder="Your Email"
-                                    value={user.Email}
-                                    className="w-full px-4 py-3 bg-white/70 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder:text-slate-400 hover:border-blue-300 focus:shadow-lg focus:shadow-blue-500/10"
-                                    required
-                                />
+                            {/* Email Field */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-slate-700">
+                                    Email Address
+                                </label>
+                                <div className="relative">
+                                    <input
+                                        name="Email"
+                                        type="email"
+                                        onChange={handleInputChange}
+                                        placeholder="your.email@example.com"
+                                        value={user.Email}
+                                        className="w-full px-4 py-4 bg-white/80 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder:text-slate-400 hover:border-slate-300 focus:shadow-lg focus:shadow-blue-500/10 focus:bg-white"
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                    <div className="absolute inset-y-0 right-0 flex items-center pr-4">
+                                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div className="group">
-                                <textarea
-                                    rows="5"
-                                    placeholder="Your Message"
-                                    name="Message"
-                                    onChange={handleInputChange}
-                                    value={user.Message}
-                                    className="w-full px-4 py-3 bg-white/70 border-2 border-blue-200 rounded-lg focus:border-blue-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder:text-slate-400 hover:border-blue-300 focus:shadow-lg focus:shadow-blue-500/10 resize-none"
-                                    required
-                                />
+                            {/* Message Field */}
+                            <div className="space-y-2">
+                                <label className="block text-sm font-semibold text-slate-700">
+                                    Your Message
+                                </label>
+                                <div className="relative">
+                                    <textarea
+                                        rows="5"
+                                        placeholder="Tell me about your project, ideas, or just say hello..."
+                                        name="Message"
+                                        onChange={handleInputChange}
+                                        value={user.Message}
+                                        className="w-full px-4 py-4 bg-white/80 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none transition-all duration-300 text-slate-700 placeholder:text-slate-400 hover:border-slate-300 focus:shadow-lg focus:shadow-blue-500/10 resize-none focus:bg-white"
+                                        required
+                                        disabled={isLoading}
+                                    />
+                                    <div className="absolute top-4 right-4">
+                                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                        </svg>
+                                    </div>
+                                </div>
                             </div>
 
+                            {/* Submit Button */}
                             <button 
                                 onClick={handleFormSubmit}
-                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold py-3 px-6 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 text-lg"
+                                disabled={isLoading}
+                                className={`w-full font-bold py-4 px-8 rounded-xl transition-all duration-300 text-lg relative overflow-hidden group ${
+                                    isLoading 
+                                        ? 'bg-slate-400 cursor-not-allowed text-white' 
+                                        : 'bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white hover:shadow-2xl hover:shadow-blue-500/25 active:scale-98 transform hover:-translate-y-0.5'
+                                }`}
                             >
-                                SEND MESSAGE
+                                <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-purple-700 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                
+                                {isLoading ? (
+                                    <span className="flex items-center justify-center space-x-3 relative z-10">
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        <span>Sending Message...</span>
+                                    </span>
+                                ) : (
+                                    <span className="flex items-center justify-center space-x-3 relative z-10">
+                                        <span>Send Message</span>
+                                        <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                        </svg>
+                                    </span>
+                                )}
                             </button>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>

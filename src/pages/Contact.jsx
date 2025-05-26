@@ -23,7 +23,7 @@ export const Contact = () => {
     const { Name, Email, Message } = user;
 
     try {
-        const res = await fetch(`${import.meta.env.VITE_Fetch_Url}/register`, { // ✅ Updated path
+        const res = await fetch(`${import.meta.env.VITE_FETCH_URL}/register`, { // ✅ Updated path
             method: "POST",
             headers: {
                 "Content-Type": "application/json"

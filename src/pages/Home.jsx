@@ -1,4 +1,13 @@
 import { FaFacebook, FaInstagram, FaLinkedin, FaGithub } from "react-icons/fa";
+import React, { Suspense, lazy } from 'react';
+
+// Lazy load ImageCom as a named export
+const ImageCom = lazy(() =>
+  import("../components/UI/Image").then((module) => ({
+    default: module.ImageCom,
+  }))
+);
+
 
 export const Home = () => {
     const handleDownloadCV = () => {
@@ -16,13 +25,9 @@ export const Home = () => {
             <div className="max-w-7xl w-full h-full flex flex-col justify-center items-center md:flex-row">
                 {/* Profile Image */}
                 <div className="flex justify-center md:items-center mt-14 mb-14 xl:mt-0 xl:mb-0 lg:ml-20 md:ml-8">
-                    <img
-                        id="profile-img"
-                        src="/Portfolio_image.png"
-                        alt="Profile"
-                        loading="lazy"
-                        className="rounded-full shadow-[0_0_30px_10px_rgba(37,99,235,0.3)] hover:shadow-[0_0_50px_20px_rgba(37,99,235,0.4)] h-[18.5rem] w-[18.5rem] sm:h-80 sm:w-80 md:h-64 md:w-64 lg:h-96 lg:w-96 object-cover transition-all duration-500 hover:scale-105 border-4 border-white/50 backdrop-blur-sm"
-                    />
+                    <Suspense fallback={<div>Loading...</div>}>
+                        <ImageCom />
+                    </Suspense>
                 </div>
 
                 {/* Text Content */}
